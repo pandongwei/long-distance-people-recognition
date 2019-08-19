@@ -5,4 +5,4 @@ Robust people recognition with the combination of face recognition(MTCNN + Mobil
 The code will be published after 1st October.
 
 ## Output
-(https://github.com/pandongwei/long-distance-people-recognition/blob/master/ezgif.com-video-to-gif.gif)
+ ![image](https://github.com/pandongwei/long-distance-people-recognition/blob/master/ezgif.com-video-to-gif.gif)
