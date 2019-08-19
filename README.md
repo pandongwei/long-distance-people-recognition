@@ -1,2 +1,8 @@
 # long-distance-people-recognition
-Robust people recognition with the combination of face recognition, people detection and kalman filter
+
+## Introduction
+Robust people recognition with the combination of face recognition(MTCNN + Mobilefacenet), people detection(Yolov3) and kalman filter.
+The code will be published after 1st October.
+
+## Output
+(https://github.com/pandongwei/long-distance-people-recognition/blob/master/ezgif.com-video-to-gif.gif)
