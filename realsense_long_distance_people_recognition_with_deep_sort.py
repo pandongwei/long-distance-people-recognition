@@ -1,13 +1,4 @@
-'''
-两个网络融合
-只检测人，并框出来
-当人脸检测框在人物检测框里面时，把识别到的人的名字转移到人物检测框上面
-confirm过程可视化
-解除confirm时len=1的限制
-加上kalman filter,第二种
-用realsense作为输入，显示距离信息和去掉背景
-'''
-
+#!/usr/bin/env python3
 from __future__ import division
 import time
 import pyrealsense2 as rs
