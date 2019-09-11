@@ -7,8 +7,21 @@ The code will be published after 1st October.
 ## Quick Start
 
 ## Output
- ![image](https://github.com/pandongwei/long-distance-people-recognition/blob/master/ezgif.com-video-to-gif.gif)
 
+### People recognition with confirmation:
+
+![image](https://github.com/pandongwei/long-distance-people-recognition/blob/master/output/ezgif.com-video-to-gif.gif)
+
+Transfer the recognition result after the confirmation part and cancel the face recognition.
+
+
+### Combination with kalman filter:
+
+![image](https://github.com/pandongwei/long-distance-people-recognition/blob/master/output/demo.gif) 
+
+After combining kalman filter people tracking part is robuster than before.
+
+### TODO: sepcialised people following of the robot
 
 ## Dependencies
 
