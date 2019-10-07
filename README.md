@@ -26,18 +26,18 @@ There has other version of kalman filter named deep sort, and it performs a litt
 
 ### People recognition with confirmation:
 
-![image](https://github.com/pandongwei/long-distance-people-recognition/blob/master/output/ezgif.com-video-to-gif.gif)
+![image](https://github.com/pandongwei/long-distance-people-recognition/blob/master/output/output1.gif)
 
 Transfer the recognition result after the confirmation part and cancel the face recognition.
 
 
 ### Combination with kalman filter:
 
-![image](https://github.com/pandongwei/long-distance-people-recognition/blob/master/output/demo.gif) 
+![image](https://github.com/pandongwei/long-distance-people-recognition/blob/master/output/output2.gif) 
 
 After combining kalman filter people tracking part is robuster than before.
 
-![image](https://github.com/pandongwei/long-distance-people-recognition/blob/master/output/111.avi) 
+![image](https://github.com/pandongwei/long-distance-people-recognition/blob/master/output/output3.gif) 
 
 Use Realsense D435 camera as input, so that distance from people to camera can be messured.
 Output from  "realsense_long_distance_people_recognition_with_kalman_filter.py"
