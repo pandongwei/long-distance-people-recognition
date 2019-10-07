@@ -37,6 +37,11 @@ Transfer the recognition result after the confirmation part and cancel the face 
 
 After combining kalman filter people tracking part is robuster than before.
 
+![image](https://github.com/pandongwei/long-distance-people-recognition/blob/master/output/111.avi) 
+
+Use Realsense D435 camera as input, so that distance from people to camera can be messured.
+Output from  "realsense_long_distance_people_recognition_with_kalman_filter.py"
+
 ### TODO: sepcialised people following of the robot
 
 ## Dependencies
