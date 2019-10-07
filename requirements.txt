@@ -1,0 +1,12 @@
+torch
+easydict
+pyrealsense2
+matplotlib
+pandas
+opencv_python
+numpy
+scipy
+torchvision
+Pillow
+scikit_learn
+pyrealsense
