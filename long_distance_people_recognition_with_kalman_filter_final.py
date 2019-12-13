@@ -155,11 +155,11 @@ def main():
     frame = 0    
     person = []
     count_yolo = 0
-
+    '''
     #record the video
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter('output/test.avi',fourcc, 15.0, (640,480),True)
-
+    '''
     cap = cv2.VideoCapture(0)
     
     detect_time = []
@@ -169,7 +169,6 @@ def main():
     while True:
         start = time.time()  
         ret, color_image = cap.read()
-
         if color_image is None:
             break
 
@@ -229,22 +228,25 @@ def main():
         for output_kalman_normal in outputs_kalman_normal:
             #draw the bounding box
             left,top,right,down = [int(max(0,x)) for x in output_kalman_normal[0:4]]
-            cv2.rectangle(orig_im, (top,left), (down,right),(255,255,255), 2)
-            cv2.putText(orig_im, str(output_kalman_normal[4]),(top,left),0, 5e-3 * 200, (0,255,0),2)              #track id 就是数字
+            cv2.rectangle(orig_im, (left,top), (right,down),(255,255,255), 2)
+            cv2.putText(orig_im, str(output_kalman_normal[4]),(left,top),0, 5e-3 * 200, (0,255,0),2)              #track id 就是数字
 
 ########################################################################################################
         #face recognition part
-            person_img = orig_im[left:right,top:down].copy()
+            person_img = orig_im[left:min(right,640),top:min(down,480)].copy()
+            print(left,right,top,down)
+            print(person_img.shape)
             img = Image.fromarray(person_img)
             bboxes, landmark = detect_faces(img)                                                                  #首先检测脸
 
             if len(bboxes) == 0:
                 print('detect no people')
             else:
+                print('the length  ', len(bboxes))
                 for bbox in bboxes:
-                    loc_x_y = [bbox[2], bbox[1]]
-                    cv2.rectangle(person_img, (int(bbox[0] + top), int(bbox[1] + left)),
-                                  (int(bbox[2] + top), int(bbox[3] + left)), (0, 0, 255))
+                    print(bbox)
+
+                    loc_x_y = [bbox[2]+top, bbox[1]+left]
                     '''
                     cv2.imshow('person',person_img)
                     if cv2.waitKey(0) or 0xFF == ord('q'):

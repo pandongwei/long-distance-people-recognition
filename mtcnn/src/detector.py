@@ -75,76 +75,80 @@ def detect_faces(image, min_face_size=20.0,
     #后面都是对box的后处理优化
     # collect boxes (and offsets, and scores) from different scales
     bounding_boxes = [i for i in bounding_boxes if i is not None]
-    bounding_boxes = np.vstack(bounding_boxes)                           #把数组给堆叠起来
 
-    keep = nms(bounding_boxes[:, 0:5], nms_thresholds[0])              #Non-maximum suppression.
-    bounding_boxes = bounding_boxes[keep]
+    if bounding_boxes:   #add a condition
+        bounding_boxes = np.vstack(bounding_boxes)                           #把数组给堆叠起来
 
-    # use offsets predicted by pnet to transform bounding boxes
-    bounding_boxes = calibrate_box(bounding_boxes[:, 0:5], bounding_boxes[:, 5:])               #用reg*系列（对应坐标的线性回归参数）可对box进行坐标修正
-    # shape [n_boxes, 5]
+        keep = nms(bounding_boxes[:, 0:5], nms_thresholds[0])              #Non-maximum suppression.
+        bounding_boxes = bounding_boxes[keep]
 
-    bounding_boxes = convert_to_square(bounding_boxes)                     #目标框修正之后，先rec2square、再pad。rec2square是将修正后不规则的框调整为正方形，pad的目标是将超出原img范围的部分填充为0，大小比例不变。
-    bounding_boxes[:, 0:4] = np.round(bounding_boxes[:, 0:4])
+        # use offsets predicted by pnet to transform bounding boxes
+        bounding_boxes = calibrate_box(bounding_boxes[:, 0:5], bounding_boxes[:, 5:])               #用reg*系列（对应坐标的线性回归参数）可对box进行坐标修正
+        # shape [n_boxes, 5]
 
-    # STAGE 2
+        bounding_boxes = convert_to_square(bounding_boxes)                     #目标框修正之后，先rec2square、再pad。rec2square是将修正后不规则的框调整为正方形，pad的目标是将超出原img范围的部分填充为0，大小比例不变。
+        bounding_boxes[:, 0:4] = np.round(bounding_boxes[:, 0:4])
 
-    '''
-    Refine Network (R-Net)：（跟P-Net结构作用差不多）该网络结构还是通过边界框回归和NMS来去掉那些false-positive区域。
-    只是由于该网络结构和P-Net网络结构有差异，多了一个全连接层，所以会取得更好的抑制false-positive的作用。
-    '''
-    img_boxes = get_image_boxes(bounding_boxes, image, size=24)                   #将P-Net最后输出的所有box，resize到24*24后输入R-Net。
-    img_boxes = Variable(torch.FloatTensor(img_boxes), volatile=True)
-    if torch.cuda.is_available():
-        img_boxes = img_boxes.cuda()
-    output = rnet(img_boxes)
-    offsets = output[0].data.numpy()  # shape [n_boxes, 4]
-    probs = output[1].data.numpy()  # shape [n_boxes, 2]
+        # STAGE 2
 
-    keep = np.where(probs[:, 1] > thresholds[1])[0]                               #继续筛选出大于阈值的boxes
-    bounding_boxes = bounding_boxes[keep]
-    bounding_boxes[:, 4] = probs[keep, 1].reshape((-1,))
-    offsets = offsets[keep]
+        '''
+        Refine Network (R-Net)：（跟P-Net结构作用差不多）该网络结构还是通过边界框回归和NMS来去掉那些false-positive区域。
+        只是由于该网络结构和P-Net网络结构有差异，多了一个全连接层，所以会取得更好的抑制false-positive的作用。
+        '''
+        img_boxes = get_image_boxes(bounding_boxes, image, size=24)                   #将P-Net最后输出的所有box，resize到24*24后输入R-Net。
+        img_boxes = Variable(torch.FloatTensor(img_boxes), volatile=True)
+        if torch.cuda.is_available():
+            img_boxes = img_boxes.cuda()
+        output = rnet(img_boxes)
+        offsets = output[0].data.numpy()  # shape [n_boxes, 4]
+        probs = output[1].data.numpy()  # shape [n_boxes, 2]
 
-    keep = nms(bounding_boxes, nms_thresholds[1])
-    bounding_boxes = bounding_boxes[keep]
-    bounding_boxes = calibrate_box(bounding_boxes, offsets[keep])               #跟P-Net 类似的过程
-    bounding_boxes = convert_to_square(bounding_boxes)
-    bounding_boxes[:, 0:4] = np.round(bounding_boxes[:, 0:4])
+        keep = np.where(probs[:, 1] > thresholds[1])[0]                               #继续筛选出大于阈值的boxes
+        bounding_boxes = bounding_boxes[keep]
+        bounding_boxes[:, 4] = probs[keep, 1].reshape((-1,))
+        offsets = offsets[keep]
 
-    # STAGE 3
+        keep = nms(bounding_boxes, nms_thresholds[1])
+        bounding_boxes = bounding_boxes[keep]
+        bounding_boxes = calibrate_box(bounding_boxes, offsets[keep])               #跟P-Net 类似的过程
+        bounding_boxes = convert_to_square(bounding_boxes)
+        bounding_boxes[:, 0:4] = np.round(bounding_boxes[:, 0:4])
 
-    '''
-    Output Network (O-Net)：该层比R-Net层又多了一层卷积层，所以处理的结果会更加精细。
-    作用和R-Net层作用一样。但是该层对人脸区域进行了更多的监督，同时还会输出5个地标（landmark）。
-    '''
-    img_boxes = get_image_boxes(bounding_boxes, image, size=48)              #将R-Net最后输出的所有box，resize到48*48后输入O-Net。
-    if len(img_boxes) == 0: 
-        return [], []
-    img_boxes = Variable(torch.FloatTensor(img_boxes), volatile=True)
-    if torch.cuda.is_available():
-        img_boxes = img_boxes.cuda()
-    output = onet(img_boxes)
-    landmarks = output[0].data.numpy()  # shape [n_boxes, 10]            #比前面多了一个输出landmarks脸部的关键点位置，每张脸五个点
-    offsets = output[1].data.numpy()  # shape [n_boxes, 4]
-    probs = output[2].data.numpy()  # shape [n_boxes, 2]
+        # STAGE 3
 
-    keep = np.where(probs[:, 1] > thresholds[2])[0]
-    bounding_boxes = bounding_boxes[keep]
-    bounding_boxes[:, 4] = probs[keep, 1].reshape((-1,))
-    offsets = offsets[keep]
-    landmarks = landmarks[keep]
+        '''
+        Output Network (O-Net)：该层比R-Net层又多了一层卷积层，所以处理的结果会更加精细。
+        作用和R-Net层作用一样。但是该层对人脸区域进行了更多的监督，同时还会输出5个地标（landmark）。
+        '''
+        img_boxes = get_image_boxes(bounding_boxes, image, size=48)              #将R-Net最后输出的所有box，resize到48*48后输入O-Net。
+        if len(img_boxes) == 0:
+            return [], []
+        img_boxes = Variable(torch.FloatTensor(img_boxes), volatile=True)
+        if torch.cuda.is_available():
+            img_boxes = img_boxes.cuda()
+        output = onet(img_boxes)
+        landmarks = output[0].data.numpy()  # shape [n_boxes, 10]            #比前面多了一个输出landmarks脸部的关键点位置，每张脸五个点
+        offsets = output[1].data.numpy()  # shape [n_boxes, 4]
+        probs = output[2].data.numpy()  # shape [n_boxes, 2]
 
-    # compute landmark points
-    width = bounding_boxes[:, 2] - bounding_boxes[:, 0] + 1.0
-    height = bounding_boxes[:, 3] - bounding_boxes[:, 1] + 1.0
-    xmin, ymin = bounding_boxes[:, 0], bounding_boxes[:, 1]
-    landmarks[:, 0:5] = np.expand_dims(xmin, 1) + np.expand_dims(width, 1)*landmarks[:, 0:5]
-    landmarks[:, 5:10] = np.expand_dims(ymin, 1) + np.expand_dims(height, 1)*landmarks[:, 5:10]
+        keep = np.where(probs[:, 1] > thresholds[2])[0]
+        bounding_boxes = bounding_boxes[keep]
+        bounding_boxes[:, 4] = probs[keep, 1].reshape((-1,))
+        offsets = offsets[keep]
+        landmarks = landmarks[keep]
 
-    bounding_boxes = calibrate_box(bounding_boxes, offsets)
-    keep = nms(bounding_boxes, nms_thresholds[2], mode='min')              #Non-maximum suppression.
-    bounding_boxes = bounding_boxes[keep]
-    landmarks = landmarks[keep]
+        # compute landmark points
+        width = bounding_boxes[:, 2] - bounding_boxes[:, 0] + 1.0
+        height = bounding_boxes[:, 3] - bounding_boxes[:, 1] + 1.0
+        xmin, ymin = bounding_boxes[:, 0], bounding_boxes[:, 1]
+        landmarks[:, 0:5] = np.expand_dims(xmin, 1) + np.expand_dims(width, 1)*landmarks[:, 0:5]
+        landmarks[:, 5:10] = np.expand_dims(ymin, 1) + np.expand_dims(height, 1)*landmarks[:, 5:10]
 
-    return bounding_boxes, landmarks
+        bounding_boxes = calibrate_box(bounding_boxes, offsets)
+        keep = nms(bounding_boxes, nms_thresholds[2], mode='min')              #Non-maximum suppression.
+        bounding_boxes = bounding_boxes[keep]
+        landmarks = landmarks[keep]
+
+        return bounding_boxes, landmarks
+    else:
+        return [],[]

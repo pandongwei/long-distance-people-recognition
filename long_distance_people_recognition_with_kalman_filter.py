@@ -2,38 +2,27 @@
 import time
 #from face recognition
 from mtcnn.src import detect_faces, show_bboxes
-import torch
 from ArcFace.mobile_model import mobileFaceNet
 from util_face_recognition import cosin_metric, get_feature, draw_ch_zn
-import numpy as np
-import cv2
 import os
 from torchvision import transforms
 from PIL import Image,ImageFont,ImageDraw
 #from yolov3
 import time
-import torch.nn as nn
-from torch.autograd import Variable
 from util_people_detection import *
 from darknet import Darknet
-from preprocess import  inp_to_image
-import random 
-import argparse
+import random
 import pickle as pkl
-
 #from Kalman filter
-from kalman_filter.detectors import Detectors
 from kalman_filter.tracker import Tracker
 
-mydir = os.path.dirname(__file__)
 #parameters from face recognition
-font = ImageFont.truetype( mydir +'/simhei.ttf',20,encoding='utf-8')
-cfgfile = mydir + "/cfg/yolov3.cfg"
-weightsfile =mydir +  "/yolov3.weights"
+font = ImageFont.truetype('simhei.ttf',20,encoding='utf-8')
+cfgfile = "cfg/yolov3.cfg"
+weightsfile ="model_data/yolov3.weights"
 num_classes = 1
 #parameters from people detection
-classes = load_classes(mydir +'/data/coco.names')
-colors = pkl.load(open(mydir + "/pallete", "rb"))
+classes = load_classes('data/coco.names')
 
 #parameters for Kalman Filter
 
@@ -74,7 +63,7 @@ def write(x, img):
     c2 = tuple(x[3:5].astype(int))
     cls = int(x[-1])
     label = "{0}".format(classes[cls])
-    color = random.choice(colors)
+    color = (255,0,0)
     cv2.rectangle(img, c1, c2,color, 1)
     t_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_PLAIN, 1 , 1)[0]
     c2 = c1[0] + t_size[0] + 3, c1[1] + t_size[1] + 4
@@ -120,41 +109,6 @@ def xy_to_normal(outputs,tracks):
         i+=1
     return output_normal
 
-
-def get_dist_info(depth_image,bounding_bbox_position):
-    #  只取depth_image中的框中最中间的小框，进行深度的计算，然后平均，确保计算的框中的像素都是人脸而不包括远距离的背景
-    '''
-    #框的边长是bounding box的0.5倍
-    depth_image = depth_image[int(0.75*bounding_bbox_position[0] + 0.25*bounding_bbox_position[2]):int(0.25*bounding_bbox_position[0] + 0.75*bounding_bbox_position[2]),
-                                                                int(0.75*bounding_bbox_position[1] + 0.25*bounding_bbox_position[3]):int(0.25*bounding_bbox_position[1] + 0.75*bounding_bbox_position[3])].astype(float)
-    '''
-    '''
-    #框的边长是bounding box的1/3
-    depth_image = depth_image[int(0.83*bounding_bbox_position[0] + 0.17*bounding_bbox_position[2]):int(0.17*bounding_bbox_position[0] + 0.83*bounding_bbox_position[2]),
-                                                             int(0.83*bounding_bbox_position[1] + 0.17*bounding_bbox_position[3]):int(0.17*bounding_bbox_position[1] + 0.83*bounding_bbox_position[3])].astype(float) 
-    '''
-    #框只取中间的几个pixels
-    depth_image = depth_image[int(0.5*(bounding_bbox_position[0] + bounding_bbox_position[2]))-1:int(0.5*(bounding_bbox_position[0] + bounding_bbox_position[2]))+1,
-                                                                int(0.5*(bounding_bbox_position[1] + bounding_bbox_position[3]))-1:int(0.5*(bounding_bbox_position[1] + bounding_bbox_position[3]))+1].astype(float)  
-   
-    depth_scale = profile.get_device().first_depth_sensor().get_depth_scale()             #这得到的是一个常数
-    depth = depth_image * depth_scale
-    dist,_,_,_ = cv2.mean(depth)              #深度平均一下
-    return dist
-
-def add_dist_info(color_image,bounding_bbox_position,dist):
-    # 图像从OpenCV格式转换成PIL格式
-    img_PIL = Image.fromarray(cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB))
-    # 字体  
-    font = ImageFont.truetype('FreeMonoBoldOblique.ttf', 30, encoding="utf-8")
-    # 开始显示
-    draw = ImageDraw.Draw(img_PIL)
-    draw.text((int(bounding_bbox_position[0]+30), int(bounding_bbox_position[1]-30)), "distance  " + str(round(dist,2)), font=font, fill=(255,0,0))
-
-    # 转换回OpenCV格式
-    img_OpenCV = cv2.cvtColor(np.asarray(img_PIL),cv2.COLOR_RGB2BGR)
-
-    return img_OpenCV    
 
 def get_person_position(kalman_output, dist_info):
     position_x = 0.5*(kalman_output[0] + kalman_output[2])
