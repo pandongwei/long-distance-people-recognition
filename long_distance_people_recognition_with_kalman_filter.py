@@ -174,7 +174,7 @@ def main():
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     out = cv2.VideoWriter('output/testwrite_normal.avi',fourcc, 15.0, (640,480),True)
     '''
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture('test_video/test.avi')
     
     detect_time = []
     recogn_time = []
@@ -287,6 +287,7 @@ def main():
                 print('detect no people')
             else:
                 for bbox in bboxes:
+                    print(bbox[:4])
                     loc_x_y = [bbox[2], bbox[1]]
                     person_img = color_image[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])].copy()              #从图像中截取框
                     feature = np.squeeze(get_feature(person_img, model_facenet, trans, device))                               #框里的图像计算feature
