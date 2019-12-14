@@ -200,6 +200,8 @@ def main():
             else:
                 print('detect face!!!!!')
                 for bbox in bboxes:
+                    cv2.rectangle(orig_im, (int(bbox[0] + top), int(bbox[1] + left)),
+                                  (int(bbox[2] + top), int(bbox[3] + left)), (0, 0, 255))  # 加box
                     loc_x_y = [bbox[2]+top, bbox[1]+left]
                     face_img = person_img[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])].copy()              #从图像中截取框
                     feature = np.squeeze(get_feature(face_img, model_facenet, trans, device))                               #框里的图像计算feature
@@ -210,7 +212,6 @@ def main():
                     person = name_list[index]
                     #在这里加框加文字
                     orig_im = draw_ch_zn(orig_im,person,font,loc_x_y)                                                                    #加名字
-                    cv2.rectangle(orig_im,(int(bbox[0]+top),int(bbox[1]+left)),(int(bbox[2]+top),int(bbox[3]+left)),(0,0,255))           #加box
 
         print('timetimetimetotal  ', time.time() - time_a)
 ###############################################################################################################
